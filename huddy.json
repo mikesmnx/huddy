@@ -5,7 +5,7 @@
   "author": [
     "mikesm"
   ],
-  "description": "A comprehensive, configurable HUD for Balatro. Tracks The Fool previews, Joker requirements, Lucky card hits/triggers, Seal inventory, and top Planet levels.",
+  "description": "A configurable HUD for Balatro",
   "prefix": "huddy",
   "main_file": "huddy.lua",
   "version": "1.0.0",
