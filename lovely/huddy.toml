@@ -20,9 +20,7 @@ local seal_red = {name = ''}
 local seal_blue = {name = ''}
 local seal_purple = {name = ''}
 local seal_gold = {name = ''}
-local top1_planet = {name = ''}
-local top2_planet = {name = ''}
-local top3_planet = {name = ''}
+local top_planets = {name = ''}
 '''
 match_indent = true
 
@@ -58,13 +56,15 @@ if self == G.consumeables then
     end
     
     if cfg.show_planets ~= false then
-        top1_planet.name = sorted_hands[1] and (localize(sorted_hands[1].name, 'poker_hands') .. ' Lvl.' .. sorted_hands[1].level) or ''
-        top2_planet.name = sorted_hands[2] and (localize(sorted_hands[2].name, 'poker_hands') .. ' Lvl.' .. sorted_hands[2].level) or ''
-        top3_planet.name = sorted_hands[3] and (localize(sorted_hands[3].name, 'poker_hands') .. ' Lvl.' .. sorted_hands[3].level) or ''
+        local planet_list = {}
+        for i = 1, 3 do
+            if sorted_hands[i] then
+                table.insert(planet_list, localize(sorted_hands[i].name, 'poker_hands') .. " (" .. sorted_hands[i].level .. ")")
+            end
+        end
+        top_planets.name = table.concat(planet_list, ", ")
     else
-        top1_planet.name = ''
-        top2_planet.name = ''
-        top3_planet.name = ''
+        top_planets.name = ''
     end
 
     local total_lucky = 0
@@ -85,8 +85,13 @@ if self == G.consumeables then
         end
     end
     
+    local deck_count = (G.deck and G.deck.cards) and #G.deck.cards or 0
     if cfg.show_lucky ~= false then
-        lucky_count.name = 'Lucky: ' .. left_lucky .. ' / ' .. total_lucky
+        local pct_str = ""
+        if cfg.show_draw_pct and deck_count > 0 then
+            pct_str = string.format(" (%.1f%%)", (left_lucky / deck_count * 100))
+        end
+        lucky_count.name = 'Lucky: ' .. left_lucky .. ' / ' .. total_lucky .. pct_str
     else
         lucky_count.name = ''
     end
@@ -123,10 +128,17 @@ if self == G.consumeables then
     end
 
     if cfg.show_seals ~= false then
-        seal_red.name = 'Red Seal: ' .. l_red .. ' / ' .. t_red
-        seal_blue.name = 'Blue Seal: ' .. l_blue .. ' / ' .. t_blue
-        seal_purple.name = 'Purple Seal: ' .. l_purple .. ' / ' .. t_purple
-        seal_gold.name = 'Gold Seal: ' .. l_gold .. ' / ' .. t_gold
+        local pct_r, pct_b, pct_p, pct_g = "", "", "", ""
+        if cfg.show_draw_pct and deck_count > 0 then
+            pct_r = string.format(" (%.1f%%)", (l_red / deck_count * 100))
+            pct_b = string.format(" (%.1f%%)", (l_blue / deck_count * 100))
+            pct_p = string.format(" (%.1f%%)", (l_purple / deck_count * 100))
+            pct_g = string.format(" (%.1f%%)", (l_gold / deck_count * 100))
+        end
+        seal_red.name = 'Red Seal: ' .. l_red .. ' / ' .. t_red .. pct_r
+        seal_blue.name = 'Blue Seal: ' .. l_blue .. ' / ' .. t_blue .. pct_b
+        seal_purple.name = 'Purple Seal: ' .. l_purple .. ' / ' .. t_purple .. pct_p
+        seal_gold.name = 'Gold Seal: ' .. l_gold .. ' / ' .. t_gold .. pct_g
     else
         seal_red.name = ''
         seal_blue.name = ''
@@ -221,13 +233,7 @@ self == G.consumeables and {n=G.UIT.C, config={align='cr'}, nodes={
         {n=G.UIT.T, config={ref_table = seal_gold, ref_value = 'name', scale = 0.3, colour = G.C.GOLD}},
     }},
     {n=G.UIT.R, config={align='cr'}, nodes={
-        {n=G.UIT.T, config={ref_table = top1_planet, ref_value = 'name', scale = 0.3, colour = G.C.ORANGE}},
-    }},
-    {n=G.UIT.R, config={align='cr'}, nodes={
-        {n=G.UIT.T, config={ref_table = top2_planet, ref_value = 'name', scale = 0.3, colour = G.C.ORANGE}},
-    }},
-    {n=G.UIT.R, config={align='cr'}, nodes={
-        {n=G.UIT.T, config={ref_table = top3_planet, ref_value = 'name', scale = 0.3, colour = G.C.ORANGE}},
+        {n=G.UIT.T, config={ref_table = top_planets, ref_value = 'name', scale = 0.3, colour = G.C.ORANGE}},
     }},
     {n=G.UIT.R, config={align='cr'}, nodes={
         {n=G.UIT.T, config={ref_table = obs_on, ref_value = 'name', scale = 0.5, colour = G.C.WHITE}}
