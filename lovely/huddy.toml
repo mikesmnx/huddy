@@ -1,0 +1,239 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 0
+
+[[patches]] 
+[patches.pattern]
+target = "cardarea.lua"
+pattern = "function CardArea:draw()"
+position = "before"
+payload = '''
+local fool_card = {name = 'None'}
+local mail_hit = {name = 'None'}
+local idol_hit = {name = 'None'}
+local ancient_hit = {name = 'None'}
+local obs_on = {name = 'YOU DONT HAVE OBSERVATORY'}
+local lucky_count = {name = 'None'}
+local lucky_hits = {name = ''}
+local seal_red = {name = ''}
+local seal_blue = {name = ''}
+local seal_purple = {name = ''}
+local seal_gold = {name = ''}
+local top1_planet = {name = ''}
+local top2_planet = {name = ''}
+local top3_planet = {name = ''}
+'''
+match_indent = true
+
+
+
+
+
+[[patches]] 
+[patches.pattern]
+target = "cardarea.lua"
+pattern = "function CardArea:draw()"
+position = "after"
+payload = '''
+if self == G.consumeables then
+    local fool_c = G.GAME.last_tarot_planet and G.P_CENTERS[G.GAME.last_tarot_planet] or nil
+    local idol_h =  G.GAME.current_round.idol_card
+    local ancient_h = G.GAME.current_round.ancient_card    
+    local mail_h = G.GAME.current_round.mail_card
+    local obs_h = G.GAME.used_vouchers.v_observatory
+    local cfg = (SMODS and SMODS.Mods and SMODS.Mods.Huddy and SMODS.Mods.Huddy.config) or {}
+
+    local sorted_hands = {}
+    if G.GAME and G.GAME.hands then
+        for k, v in pairs(G.GAME.hands) do
+            table.insert(sorted_hands, {name = k, level = v.level})
+        end
+        table.sort(sorted_hands, function(a, b) 
+            if a.level == b.level then 
+                return a.name < b.name 
+            end 
+            return a.level > b.level 
+        end)
+    end
+    
+    if cfg.show_planets ~= false then
+        top1_planet.name = sorted_hands[1] and (localize(sorted_hands[1].name, 'poker_hands') .. ' Lvl.' .. sorted_hands[1].level) or ''
+        top2_planet.name = sorted_hands[2] and (localize(sorted_hands[2].name, 'poker_hands') .. ' Lvl.' .. sorted_hands[2].level) or ''
+        top3_planet.name = sorted_hands[3] and (localize(sorted_hands[3].name, 'poker_hands') .. ' Lvl.' .. sorted_hands[3].level) or ''
+    else
+        top1_planet.name = ''
+        top2_planet.name = ''
+        top3_planet.name = ''
+    end
+
+    local total_lucky = 0
+    if G.playing_cards then
+        for _, v in ipairs(G.playing_cards) do
+            if v.ability and v.ability.effect == "Lucky Card" then 
+                total_lucky = total_lucky + 1 
+            end
+        end
+    end
+    
+    local left_lucky = 0
+    if G.deck and G.deck.cards then
+        for _, v in ipairs(G.deck.cards) do
+            if v.ability and v.ability.effect == "Lucky Card" then 
+                left_lucky = left_lucky + 1 
+            end
+        end
+    end
+    
+    if cfg.show_lucky ~= false then
+        lucky_count.name = 'Lucky: ' .. left_lucky .. ' / ' .. total_lucky
+    else
+        lucky_count.name = ''
+    end
+
+    if cfg.show_lucky_hits ~= false then
+        local triggers = (G.GAME and G.GAME.huddy_lucky_triggers) or 0
+        local mult_hits = (G.GAME and G.GAME.huddy_lucky_mult) or 0
+        local money_hits = (G.GAME and G.GAME.huddy_lucky_money) or 0
+        lucky_hits.name = 'Lucky Hits: ' .. money_hits .. 'x$ / ' .. mult_hits .. 'xM (' .. triggers .. ' played)'
+    else
+        lucky_hits.name = ''
+    end
+
+    local t_red, t_blue, t_purple, t_gold = 0, 0, 0, 0
+    if G.playing_cards then
+        for _, v in ipairs(G.playing_cards) do
+            if v.seal == 'Red' then t_red = t_red + 1
+            elseif v.seal == 'Blue' then t_blue = t_blue + 1
+            elseif v.seal == 'Purple' then t_purple = t_purple + 1
+            elseif v.seal == 'Gold' then t_gold = t_gold + 1
+            end
+        end
+    end
+
+    local l_red, l_blue, l_purple, l_gold = 0, 0, 0, 0
+    if G.deck and G.deck.cards then
+        for _, v in ipairs(G.deck.cards) do
+            if v.seal == 'Red' then l_red = l_red + 1
+            elseif v.seal == 'Blue' then l_blue = l_blue + 1
+            elseif v.seal == 'Purple' then l_purple = l_purple + 1
+            elseif v.seal == 'Gold' then l_gold = l_gold + 1
+            end
+        end
+    end
+
+    if cfg.show_seals ~= false then
+        seal_red.name = 'Red Seal: ' .. l_red .. ' / ' .. t_red
+        seal_blue.name = 'Blue Seal: ' .. l_blue .. ' / ' .. t_blue
+        seal_purple.name = 'Purple Seal: ' .. l_purple .. ' / ' .. t_purple
+        seal_gold.name = 'Gold Seal: ' .. l_gold .. ' / ' .. t_gold
+    else
+        seal_red.name = ''
+        seal_blue.name = ''
+        seal_purple.name = ''
+        seal_gold.name = ''
+    end
+
+    if cfg.show_fool ~= false then
+        fool_card.name = fool_c and localize { type = 'name_text', key = fool_c.key, set = fool_c.set } or localize('k_none')
+    else
+        fool_card.name = ''
+    end
+    
+    if cfg.show_idol ~= false then
+        if idol_h then
+            idol_hit.name =  'Idol: ' .. idol_h.rank .. ' of ' .. idol_h.suit
+        else
+            idol_hit.name = localize('k_none')
+        end
+    else
+        idol_hit.name = ''
+    end
+    
+    if cfg.show_ancient ~= false then
+        if ancient_h then 
+            ancient_hit.name = 'Ancient: ' .. ancient_h.suit
+        else 
+            ancient_hit.name = localize('k_none')
+        end
+    else
+        ancient_hit.name = ''
+    end
+    
+    if cfg.show_mail ~= false then
+        if mail_h then
+            mail_hit.name = 'Rebate: ' .. mail_h.rank
+        else
+            mail_hit.name = localize('k_none')
+        end
+    else
+        mail_hit.name = ''
+    end
+    
+    if cfg.show_obs ~= false then
+        if obs_h then
+            obs_on.name = 'YOU HAVE OBSERVATORY'
+        else
+            obs_on.name = 'You dont have observatory'
+        end
+    else
+        obs_on.name = ''
+    end
+end'''
+match_indent = true
+
+
+[[patches]] 
+[patches.pattern]
+target = "cardarea.lua"
+pattern = "{n=G.UIT.T, config={ref_table = self.config, ref_value = 'card_count', scale = 0.3, colour = G.C.WHITE}},"
+position = "before"
+payload = '''
+self == G.consumeables and {n=G.UIT.C, config={align='cr'}, nodes={
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = fool_card, ref_value = 'name', scale = 0.3, colour = G.C.WHITE}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = mail_hit, ref_value = 'name', scale = 0.3, colour = G.C.WHITE}}
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = idol_hit, ref_value = 'name', scale = 0.3, colour = G.C.WHITE}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = ancient_hit, ref_value = 'name', scale = 0.3, colour = G.C.WHITE}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = lucky_count, ref_value = 'name', scale = 0.3, colour = G.C.WHITE}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = lucky_hits, ref_value = 'name', scale = 0.3, colour = G.C.WHITE}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = seal_red, ref_value = 'name', scale = 0.3, colour = G.C.RED}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = seal_blue, ref_value = 'name', scale = 0.3, colour = G.C.BLUE}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = seal_purple, ref_value = 'name', scale = 0.3, colour = G.C.PURPLE}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = seal_gold, ref_value = 'name', scale = 0.3, colour = G.C.GOLD}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = top1_planet, ref_value = 'name', scale = 0.3, colour = G.C.ORANGE}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = top2_planet, ref_value = 'name', scale = 0.3, colour = G.C.ORANGE}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = top3_planet, ref_value = 'name', scale = 0.3, colour = G.C.ORANGE}},
+    }},
+    {n=G.UIT.R, config={align='cr'}, nodes={
+        {n=G.UIT.T, config={ref_table = obs_on, ref_value = 'name', scale = 0.5, colour = G.C.WHITE}}
+    }},
+}} or nil,
+'''
+match_indent = true
+
+

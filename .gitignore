@@ -1,0 +1,10 @@
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# External reference code
+external_codebase/
